@@ -1,0 +1,5 @@
+/.pytest_cache/
+/dist/
+/src/markdown_pdf/__pycache__/
+/src/markdown_pdf.egg-info/
+/tests/__pycache__/

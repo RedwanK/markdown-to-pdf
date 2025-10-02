@@ -1,0 +1,67 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper,margin=25mm]{geometry}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{xcolor}
+\usepackage{setspace}
+\usepackage{listings}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  columns=fullflexible,
+  frame=single,
+  framerule=0pt,
+  backgroundcolor=\color[gray]{0.95},
+  showstringspaces=false
+}
+
+\providecommand{\tightlist}{
+  \setlength{\itemsep}{0pt}
+  \setlength{\parskip}{0pt}
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+
+% Header configuration
+\fancyhead[L]{\ignorespaces
+  \begin{minipage}[c]{0.6\textwidth}%
+  \raggedright
+  {\Large {{ metadata.title | default(metadata.company, true) | latex_escape }}}\\
+  {\small {{ metadata.author | latex_escape | default("", true) }}}%
+  \end{minipage}%
+}
+\fancyhead[R]{\ignorespaces
+  \begin{minipage}[c]{0.35\textwidth}%
+  \raggedleft
+  {% if metadata.logo_path %}\includegraphics[height=1.2cm]{ {{ metadata.logo_path }} }\\{% endif %}
+  {\small {{ metadata.contact | latex_escape | default("", true) }}}%
+  \end{minipage}%
+}
+
+% Footer configuration
+\fancyfoot[L]{\small {{ metadata.address | latex_escape | default("", true) }}}
+\fancyfoot[R]{\small Page \thepage{} / \pageref{LastPage}}
+
+{% if preamble %}
+% Extra preamble
+{{ preamble }}
+{% endif %}
+
+\setlength{\headheight}{32pt}
+\setlength{\parskip}{0.8em}
+\setlength{\parindent}{0pt}
+
+\begin{document}
+
+\onehalfspacing
+
+{{ body | safe }}
+
+\end{document}
