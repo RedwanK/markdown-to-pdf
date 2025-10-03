@@ -1,0 +1,44 @@
+\begin{titlepage}
+\thispagestyle{empty}
+\centering
+\vspace*{2cm}
+
+{% if metadata.logo_path %}
+\includegraphics[height=2.5cm]{ {{ metadata.logo_path }} }\par
+\vspace{1.5cm}
+{% endif %}
+
+{\MarkdownPDFTitleFont\color{MarkdownPDFTitleColor}\fontsize{28pt}{34pt}\selectfont {{ metadata.title | default(metadata.company, true) | latex_escape | default("Document", true) }}}\par
+
+{% set subtitle = metadata.extra.get('subtitle') if metadata.extra else None %}
+{% if subtitle %}
+\vspace{0.8cm}
+{\Large {{ subtitle | latex_escape }}}\par
+{% endif %}
+
+{% if metadata.author %}
+\vspace{1.2cm}
+{\large {{ metadata.author | latex_escape }}}\par
+{% endif %}
+
+{% if metadata.company %}
+\vspace{0.4cm}
+{\large {{ metadata.company | latex_escape }}}\par
+{% endif %}
+
+{% set cover_notes = metadata.extra.get('cover_notes') if metadata.extra else None %}
+{% if cover_notes %}
+\vspace{2cm}
+{\small {{ cover_notes | latex_escape }}}\par
+{% endif %}
+
+\vfill
+
+{% if metadata.contact %}
+{\small {{ metadata.contact | latex_escape }}}\par
+{% endif %}
+{% if metadata.address %}
+{\small {{ metadata.address | latex_escape }}}\par
+{% endif %}
+
+\end{titlepage}

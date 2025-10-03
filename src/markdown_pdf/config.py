@@ -20,6 +20,9 @@ class DocumentMetadata(BaseModel):
     contact: Optional[str] = None
     address: Optional[str] = None
     logo_path: Optional[Path] = None
+    title_color: Optional[str] = None
+    title_font: Optional[str] = None
+    body_font: Optional[str] = None
     extra: Dict[str, Any] = Field(default_factory=dict)
 
     @field_validator("logo_path", mode="before")
@@ -64,7 +67,7 @@ class MermaidConfig(BaseModel):
     theme: Optional[str] = None
     background_color: Optional[str] = None
     config_file: Optional[Path] = None
-    extra_args: list[str] = Field(default_factory=list)
+    extra_args: list[str] = Field(default_factory=lambda: ["--scale", "2"])
     puppeteer_args: list[str] = Field(
         default_factory=lambda: ["--no-sandbox", "--disable-setuid-sandbox"]
     )
@@ -77,6 +80,16 @@ class MermaidConfig(BaseModel):
         if isinstance(value, Path):
             return value
         return Path(value)
+
+
+class PlantUMLConfig(BaseModel):
+    """Configuration pour l'appel au CLI PlantUML."""
+
+    enabled: bool = True
+    cli_path: str = "plantuml"
+    output_format: str = "pdf"
+    charset: str = "UTF-8"
+    extra_args: list[str] = Field(default_factory=list)
 
 
 class PandocConfig(BaseModel):
@@ -92,7 +105,7 @@ class LatexEngineConfig(BaseModel):
     """Contrôle de l'appel du moteur LaTeX."""
 
     executable: str = "xelatex"
-    runs: int = 1
+    runs: int = 2
     extra_args: list[str] = Field(default_factory=list)
 
 
@@ -103,6 +116,7 @@ class ConversionOptions(BaseModel):
     template: TemplateConfig = Field(default_factory=TemplateConfig)
     metadata: DocumentMetadata = Field(default_factory=DocumentMetadata)
     mermaid: MermaidConfig = Field(default_factory=MermaidConfig)
+    plantuml: PlantUMLConfig = Field(default_factory=PlantUMLConfig)
     pandoc: PandocConfig = Field(default_factory=PandocConfig)
     latex: LatexEngineConfig = Field(default_factory=LatexEngineConfig)
     keep_temp_dir: bool = False

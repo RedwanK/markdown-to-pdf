@@ -1,10 +1,3 @@
----
-title: Rapport de démonstration
-company: Demo Corp
-contact: contact@demo.example
-address: 42 rue de la Demo, 75000 Paris
----
-
 # Exemple Markdown
 
 Ce document illustre la conversion vers LaTeX.
@@ -16,6 +9,15 @@ graph TD
     A[Démarrage] --> B{Choix}
     B -->|Oui| C[Action]
     B -->|Non| D[Fin]
+```
+
+```plantuml
+@startuml firstDiagram
+
+Alice -> Bob: Hello
+Bob -> Alice: Hi!
+		
+@enduml
 ```
 
 ## Image
