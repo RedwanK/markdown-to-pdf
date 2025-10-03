@@ -54,11 +54,17 @@ def _load_mapping_file(path: Optional[Path]) -> Dict[str, str]:
 def convert(
     sources: List[Path] = typer.Argument(..., exists=True, help="Markdown à convertir (fichiers ou dossiers)."),
     output_dir: Path = typer.Option(Path("dist"), "--output-dir", "-o", help="Répertoire de sortie."),
+    output_file: Optional[Path] = typer.Option(
+        None,
+        "--output-file",
+        "-f",
+        help="Nom du PDF généré (relatif à --output-dir sauf chemin absolu).",
+    ),
     template_path: Optional[Path] = typer.Option(None, "--template", help="Template LaTeX Jinja personnalisé."),
     preamble_path: Optional[Path] = typer.Option(None, "--preamble", help="Fichier LaTeX à injecter dans le préambule."),
     preamble_inline: Optional[str] = typer.Option(None, "--preamble-inline", help="Code LaTeX inline ajouté au préambule."),
-    metadata_file: Optional[Path] = typer.Option(None, "--metadata-file", help="Fichier JSON/YAML pour les métadonnées."),
-    meta: List[str] = typer.Option([], "--meta", help="Métadonnées supplémentaires clé=valeur."),
+    metadata_file: Optional[Path] = typer.Option(None, "--meta", help="Fichier JSON/YAML pour les métadonnées."),
+    meta_entry: List[str] = typer.Option([], "--meta-entry", help="Métadonnées supplémentaires clé=valeur."),
     disable_mermaid: bool = typer.Option(False, "--disable-mermaid", help="Désactiver le rendu Mermaid."),
     mermaid_cli_path: Optional[str] = typer.Option(None, "--mermaid-cli", help="Chemin du binaire mmdc."),
     mermaid_format: str = typer.Option("png", "--mermaid-format", help="Format Mermaid (svg/png)."),
@@ -85,7 +91,7 @@ def convert(
 
     metadata_data: Dict[str, str] = {}
     metadata_data.update(_load_mapping_file(metadata_file))
-    metadata_data.update(_parse_key_value(meta))
+    metadata_data.update(_parse_key_value(meta_entry))
 
     template_config = TemplateConfig(
         template_path=template_path or TemplateConfig().template_path,
@@ -142,19 +148,37 @@ def convert(
         keep_temp_dir=keep_temp,
     )
 
+    if output_file and len(sources) != 1:
+        raise typer.BadParameter("L'option --output-file nécessite une seule source.")
+
+    custom_output: Optional[Path] = None
+    if output_file:
+        custom_output = output_file if output_file.is_absolute() else output_dir / output_file
+        custom_output = custom_output.resolve()
+        custom_output.parent.mkdir(parents=True, exist_ok=True)
+
     builder = MarkdownPDFBuilder(options)
 
     for source in sources:
         if source.is_dir():
-            for markdown_file in sorted(source.glob("**/*.md")):
-                _convert_single(builder, markdown_file, output_dir)
+            markdown_files = sorted(path for path in source.glob("**/*.md") if path.is_file())
+            if not markdown_files:
+                typer.secho(f"⚠️ {source}: aucun fichier Markdown trouvé.", fg=typer.colors.YELLOW)
+                continue
+            output_path = custom_output if custom_output else output_dir / f"{source.name}.pdf"
+            _convert_directory(builder, source, markdown_files, output_path)
         else:
-            _convert_single(builder, source, output_dir)
+            _convert_single(builder, source, output_dir, custom_output)
 
 
-def _convert_single(builder: MarkdownPDFBuilder, markdown_file: Path, output_dir: Path) -> None:
+def _convert_single(
+    builder: MarkdownPDFBuilder,
+    markdown_file: Path,
+    output_dir: Path,
+    output_path: Optional[Path] = None,
+) -> None:
     try:
-        result = builder.convert(markdown_file)
+        result = builder.convert(markdown_file, output_path=output_path)
     except Exception as exc:  # pragma: no cover - feedback utilisateur
         typer.secho(f"❌ {markdown_file}: {exc}", fg=typer.colors.RED)
         return
@@ -163,3 +187,17 @@ def _convert_single(builder: MarkdownPDFBuilder, markdown_file: Path, output_dir
     except ValueError:
         relative = result
     typer.secho(f"✅ {markdown_file} → {relative}", fg=typer.colors.GREEN)
+
+
+def _convert_directory(
+    builder: MarkdownPDFBuilder,
+    source_dir: Path,
+    markdown_files: list[Path],
+    output_path: Path,
+) -> None:
+    try:
+        result = builder.convert_many(markdown_files, output_path=output_path)
+    except Exception as exc:  # pragma: no cover - feedback utilisateur
+        typer.secho(f"❌ {source_dir}: {exc}", fg=typer.colors.RED)
+        return
+    typer.secho(f"✅ dossier {source_dir} → {result.name}", fg=typer.colors.GREEN)

@@ -7,7 +7,7 @@ import shutil
 import tempfile
 from contextlib import ExitStack
 from pathlib import Path
-from typing import Optional
+from typing import Iterable, Optional, Sequence
 
 from .config import ConversionOptions, DocumentMetadata
 from .latex_engine import LatexCompiler
@@ -30,14 +30,25 @@ class MarkdownPDFBuilder:
 
     def convert(self, markdown_path: Path, output_path: Optional[Path] = None) -> Path:
         markdown_path = markdown_path.resolve()
+        return self._convert_documents([markdown_path], output_path)
+
+    def convert_many(self, markdown_paths: Sequence[Path], output_path: Optional[Path] = None) -> Path:
+        resolved_paths = [path.resolve() for path in markdown_paths]
+        if not resolved_paths:
+            raise ValueError("Aucun fichier Markdown fourni pour la conversion groupée.")
+        return self._convert_documents(resolved_paths, output_path)
+
+    def _convert_documents(self, markdown_paths: Sequence[Path], output_path: Optional[Path]) -> Path:
         output_dir = self._options.output_dir.resolve()
         output_dir.mkdir(parents=True, exist_ok=True)
 
         if output_path is None:
-            output_path = output_dir / f"{markdown_path.stem}.pdf"
+            if len(markdown_paths) == 1:
+                stem = markdown_paths[0].stem
+            else:
+                stem = markdown_paths[0].parent.name or markdown_paths[0].stem
+            output_path = output_dir / f"{stem}.pdf"
         output_path = output_path.resolve()
-
-        markdown_text = markdown_path.read_text(encoding="utf-8")
 
         with ExitStack() as stack:
             if self._options.keep_temp_dir:
@@ -46,23 +57,43 @@ class MarkdownPDFBuilder:
                 temp_dir = stack.enter_context(tempfile.TemporaryDirectory(prefix="markdown_pdf_"))
                 temp_dir_path = Path(temp_dir)
 
-            preprocess = self._preprocessor.run(markdown_text, temp_dir_path, markdown_path.stem)
+            combined_markdown_parts: list[str] = []
+            combined_front_matter: dict = {}
+
+            for index, markdown_path in enumerate(markdown_paths):
+                markdown_text = markdown_path.read_text(encoding="utf-8")
+                preprocess = self._preprocessor.run(
+                    markdown_text,
+                    temp_dir_path,
+                    f"{markdown_path.stem}-{index:03d}" if len(markdown_paths) > 1 else markdown_path.stem,
+                )
+
+                part = preprocess.markdown
+                if part.strip():
+                    combined_markdown_parts.append(part)
+
+                if isinstance(preprocess.front_matter, dict):
+                    combined_front_matter.update(preprocess.front_matter)
 
             processed_md = temp_dir_path / "document.md"
-            processed_md.write_text(preprocess.markdown, encoding="utf-8")
+            separator = "\n\n\\newpage\n\n"
+            processed_md.write_text(separator.join(combined_markdown_parts), encoding="utf-8")
 
-            resource_paths = [temp_dir_path, markdown_path.parent]
+            resource_paths: list[Path] = [temp_dir_path]
+            resource_paths.extend(self._iter_resource_paths(markdown_paths))
             latex_body = self._pandoc.convert_to_latex(processed_md, resource_paths=resource_paths)
             latex_body = self._sanitize_latex(latex_body)
 
-            metadata = self._resolve_metadata(preprocess.front_matter, markdown_path.parent)
-            preamble_extra = preprocess.front_matter.get("preamble") if isinstance(preprocess.front_matter, dict) else None
+            metadata = self._resolve_metadata(combined_front_matter, markdown_paths[0].parent)
+            preamble_extra = (
+                combined_front_matter.get("preamble") if isinstance(combined_front_matter, dict) else None
+            )
 
             tex_content = self._template.render(
                 body_latex=latex_body,
                 metadata=metadata,
                 extra_context={
-                    "front_matter": preprocess.front_matter,
+                    "front_matter": combined_front_matter,
                     "preamble_extra": preamble_extra,
                 },
             )
@@ -70,12 +101,24 @@ class MarkdownPDFBuilder:
             tex_file = temp_dir_path / "document.tex"
             tex_file.write_text(tex_content, encoding="utf-8")
 
-            search_paths = [temp_dir_path, markdown_path.parent]
+            search_paths = [temp_dir_path]
+            search_paths.extend(self._iter_resource_paths(markdown_paths))
             pdf_path = self._compiler.compile(tex_file, search_paths=search_paths)
 
             shutil.copy2(pdf_path, output_path)
 
         return output_path
+
+    @staticmethod
+    def _iter_resource_paths(markdown_paths: Iterable[Path]) -> list[Path]:
+        seen: set[Path] = set()
+        paths: list[Path] = []
+        for markdown_path in markdown_paths:
+            parent = markdown_path.parent
+            if parent not in seen:
+                seen.add(parent)
+                paths.append(parent)
+        return paths
 
     def _resolve_metadata(self, front_matter: dict, base_dir: Path) -> DocumentMetadata:
         base_data = self._options.metadata.model_dump()
