@@ -28,6 +28,8 @@
 \usepackage{longtable,booktabs,array}
 \usepackage{calc}
 \usepackage{etoolbox}
+\usepackage{enumitem}
+\usepackage{colortbl}
 \usepackage{sectsty}
 
 {% set title_font_candidate = metadata.title_font | default(body_font, true) %}
@@ -46,6 +48,7 @@
 {% else %}
 \colorlet{MarkdownPDFTitleColor}{ {{- raw_title_color | latex_escape -}} }
 {% endif %}
+\definecolor{MarkdownPDFLinkColor}{HTML}{1A6FB3}
 
 \sectionfont{\color{MarkdownPDFTitleColor}\MarkdownPDFTitleFont}
 \subsectionfont{\color{MarkdownPDFTitleColor}\MarkdownPDFTitleFont}
@@ -69,6 +72,41 @@
   \setlength{\parskip}{0pt}
 }
 
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+
+\setlist[itemize]{leftmargin=*, labelsep=0.5em}
+\setlist[enumerate]{leftmargin=*, labelsep=0.5em}
+\setlist[description]{leftmargin=*, labelsep=0.5em}
+
+\definecolor{MarkdownPDFTableAltRow}{HTML}{FAFBFD}
+\definecolor{MarkdownPDFTableRule}{HTML}{D6DFEB}
+
+\setlength{\tabcolsep}{6pt}
+\renewcommand{\arraystretch}{1.15}
+\setlength{\LTleft}{\fill}
+\setlength{\LTright}{\fill}
+
+\newcommand{\MarkdownPDFSetupTable}{
+  \rowcolors{2}{MarkdownPDFTableAltRow}{white}% alterner sur les lignes de données, en laissant l'entête intacte
+  \arrayrulecolor{MarkdownPDFTableRule}
+}
+
+\AtBeginEnvironment{longtable}{
+  \MarkdownPDFSetupTable
+}
+
+\AfterEndEnvironment{longtable}{
+  \rowcolors{2}{white}{white}% réinitialiser pour les tableaux suivants
+  \arrayrulecolor{black}
+}
+
 % Longtable fixes inspired by Pandoc's default template
 \makeatletter
 \patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
@@ -81,6 +119,14 @@
 \pagestyle{fancy}
 \fancyhf{}
 
+\hypersetup{
+  colorlinks=true,
+  linkcolor=MarkdownPDFLinkColor,
+  urlcolor=MarkdownPDFLinkColor,
+  citecolor=MarkdownPDFLinkColor,
+  pdfborder={0 0 0}
+}
+
 % Header configuration
 \fancyhead[L]{\ignorespaces
   \begin{minipage}[c]{0.6\textwidth}%
@@ -92,7 +138,6 @@
 \fancyhead[R]{\ignorespaces
   \begin{minipage}[c]{0.35\textwidth}%
   \raggedleft
-  {% if metadata.logo_path %}\includegraphics[height=1.2cm]{ {{ metadata.logo_path }} }\\{% endif %}
   {\small {{ metadata.contact | latex_escape | default("", true) }}}%
   \end{minipage}%
 }

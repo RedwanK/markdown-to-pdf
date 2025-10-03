@@ -9,6 +9,8 @@ from markdown_pdf.config import (
     PlantUMLConfig,
     TemplateConfig,
 )
+from markdown_pdf.config import PandocConfig
+from markdown_pdf.pandoc import PandocConverter
 from markdown_pdf.pipeline import MarkdownPDFBuilder
 
 
@@ -83,3 +85,20 @@ def test_pipeline_concatenate_directory(monkeypatch, tmp_path: Path):
     assert result.exists()
     assert result.read_bytes() == b"PDF"
     assert combined_markdown["markdown"].count("\\newpage") == 1
+
+
+def test_pandoc_parses_lists_without_blankline(tmp_path: Path):
+    markdown = (
+        "Composants\n"
+        "- Application web\n"
+        "- Broker MQTT\n"
+    )
+
+    md_path = tmp_path / "doc.md"
+    md_path.write_text(markdown, encoding="utf-8")
+
+    pandoc = PandocConverter(PandocConfig())
+    latex = pandoc.convert_to_latex(md_path)
+
+    assert "\\begin{itemize}" in latex
+    assert latex.count("\\item") == 2

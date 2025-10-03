@@ -16,6 +16,7 @@ from .config import (
     MermaidConfig,
     PandocConfig,
     PlantUMLConfig,
+    RemoteImageConfig,
     TemplateConfig,
 )
 from .pipeline import MarkdownPDFBuilder
@@ -78,6 +79,21 @@ def convert(
         "--mermaid-puppeteer-arg",
         help="Argument passé à Chromium via Puppeteer (par ex. --no-sandbox).",
     ),
+    disable_remote_images: bool = typer.Option(
+        False,
+        "--disable-remote-images",
+        help="Désactiver le téléchargement des images distantes référencées dans le Markdown.",
+    ),
+    remote_image_timeout: float = typer.Option(
+        10.0,
+        "--remote-image-timeout",
+        help="Délai maximal (en secondes) pour récupérer une image distante.",
+    ),
+    remote_image_user_agent: Optional[str] = typer.Option(
+        None,
+        "--remote-image-user-agent",
+        help="User-Agent HTTP utilisé pour télécharger les images distantes.",
+    ),
     disable_plantuml: bool = typer.Option(
         False,
         "--disable-plantuml",
@@ -134,6 +150,13 @@ def convert(
         extra_args=default_plantuml.extra_args + plantuml_arg,
     )
 
+    default_remote_images = RemoteImageConfig()
+    remote_images_config = RemoteImageConfig(
+        enabled=not disable_remote_images,
+        timeout=remote_image_timeout,
+        user_agent=remote_image_user_agent or default_remote_images.user_agent,
+    )
+
     default_pandoc = PandocConfig()
     pandoc_config = PandocConfig(
         executable=pandoc_path or default_pandoc.executable,
@@ -167,6 +190,7 @@ def convert(
         metadata=metadata,
         mermaid=mermaid_config,
         plantuml=plantuml_config,
+        remote_images=remote_images_config,
         pandoc=pandoc_config,
         latex=latex_config,
         keep_temp_dir=keep_temp,
