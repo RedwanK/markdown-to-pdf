@@ -53,7 +53,7 @@ class MarkdownPDFBuilder:
 
             resource_paths = [temp_dir_path, markdown_path.parent]
             latex_body = self._pandoc.convert_to_latex(processed_md, resource_paths=resource_paths)
-            latex_body = self._stabilize_figures(latex_body)
+            latex_body = self._sanitize_latex(latex_body)
 
             metadata = self._resolve_metadata(preprocess.front_matter, markdown_path.parent)
             preamble_extra = preprocess.front_matter.get("preamble") if isinstance(preprocess.front_matter, dict) else None
@@ -96,13 +96,9 @@ class MarkdownPDFBuilder:
         return DocumentMetadata(**base_data)
 
     @staticmethod
-    def _stabilize_figures(latex_body: str) -> str:
-        """Force les environnements figure/longtable à rester à l'emplacement courant."""
+    def _sanitize_latex(latex_body: str) -> str:
+        """Nettoie certaines séquences LaTeX problématiques générées par pandoc."""
 
-        figure_pattern = re.compile(r"\\begin\{figure\}(?!\[)")
-        latex_body = figure_pattern.sub(r"\\begin{figure}[H]", latex_body)
-
-        table_pattern = re.compile(r"\\begin\{longtable\}(?!\[)")
-        latex_body = table_pattern.sub(r"\\begin{longtable}[H]", latex_body)
-
+        latex_body = re.sub(r"^\s*\\\*?\s*$\n?", "", latex_body, flags=re.MULTILINE)
+        latex_body = re.sub(r"\\\*?[ \t]*(?=\n\s*\\end\{)", "", latex_body)
         return latex_body

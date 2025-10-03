@@ -17,7 +17,7 @@ pip install -e .[dev]
 ## Usage rapide
 
 ```bash
-markdown-pdf convert examples/sample.md --output-dir dist/ \
+markdown-pdf examples/sample.md --output-dir dist/ \
   --meta company="Mon Entreprise" --meta contact="contact@example.com"
 ```
 

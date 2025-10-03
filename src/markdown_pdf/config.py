@@ -85,7 +85,7 @@ class PandocConfig(BaseModel):
     executable: str = "pandoc"
     from_format: str = "markdown"
     to_format: str = "latex"
-    extra_args: list[str] = Field(default_factory=lambda: ["--listings", "-V", "float-placement=H"])
+    extra_args: list[str] = Field(default_factory=lambda: ["--listings"])
 
 
 class LatexEngineConfig(BaseModel):

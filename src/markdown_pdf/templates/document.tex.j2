@@ -4,6 +4,10 @@
 \setmainfont{Latin Modern Roman}
 \usepackage{graphicx}
 \usepackage{float}
+\floatplacement{figure}{H}
+\floatplacement{table}{H}
+\usepackage{babel}
+\usepackage[autostyle=true]{csquotes}
 \usepackage{hyperref}
 \usepackage{fancyhdr}
 \usepackage{lastpage}
@@ -11,6 +15,9 @@
 \usepackage{setspace}
 \usepackage{listings}
 
+{% raw %}
+\providecommand{\passthrough}[1]{#1}
+{% endraw %}
 \lstset{
   basicstyle=\ttfamily\small,
   breaklines=true,
