@@ -11,10 +11,15 @@ import yaml
 
 from .mermaid import MermaidRenderer, MermaidRenderingError
 from .plantuml import PlantUMLRenderer, PlantUMLRenderingError
+from .remote_images import RemoteImageDownloader, RemoteImageError
 
 _FRONT_MATTER_PATTERN = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
 _MERMAID_PATTERN = re.compile(r"```mermaid\s*\n(.*?)\n```", re.DOTALL)
 _PLANTUML_PATTERN = re.compile(r"```plantuml\s*\n(.*?)\n```", re.DOTALL)
+_REMOTE_IMAGE_PATTERN = re.compile(
+    r"!\[(?P<alt>[^\]]*)\]\((?P<url>https?://[^)\s]+)(?:\s+\"(?P<title>[^\"]*)\")?\)",
+    re.IGNORECASE,
+)
 
 
 @dataclass
@@ -29,15 +34,19 @@ class MarkdownPreprocessor:
         self,
         mermaid_renderer: Optional[MermaidRenderer] = None,
         plantuml_renderer: Optional[PlantUMLRenderer] = None,
+        remote_image_downloader: Optional[RemoteImageDownloader] = None,
     ) -> None:
         self._mermaid_renderer = mermaid_renderer
         self._plantuml_renderer = plantuml_renderer
+        self._remote_image_downloader = remote_image_downloader
 
     def run(self, markdown_text: str, work_dir: Path, doc_stem: str) -> PreprocessResult:
         front_matter, content = self._extract_front_matter(markdown_text)
         processed, assets = self._render_mermaid_blocks(content, work_dir, doc_stem)
         processed, plantuml_assets = self._render_plantuml_blocks(processed, work_dir, doc_stem)
         assets.extend(plantuml_assets)
+        processed, remote_assets = self._download_remote_images(processed, work_dir, doc_stem)
+        assets.extend(remote_assets)
         return PreprocessResult(markdown=processed, front_matter=front_matter, assets=assets)
 
     @staticmethod
@@ -115,4 +124,31 @@ class MarkdownPreprocessor:
             )
 
         updated = _PLANTUML_PATTERN.sub(replace, markdown_text)
+        return updated, assets
+
+    def _download_remote_images(self, markdown_text: str, work_dir: Path, doc_stem: str) -> Tuple[str, List[Path]]:
+        if not self._remote_image_downloader or not self._remote_image_downloader.enabled:
+            return markdown_text, []
+
+        assets: List[Path] = []
+        output_dir = work_dir / "remote_images"
+        counter = 0
+
+        def replace(match: re.Match[str]) -> str:
+            nonlocal counter
+            url = match.group("url")
+            alt = match.group("alt") or ""
+            title = match.group("title")
+            stem = f"{doc_stem}-remote-{counter:03d}"
+            counter += 1
+            try:
+                asset_path = self._remote_image_downloader.download(url, output_dir, stem)
+            except RemoteImageError as exc:
+                return f"![{alt}]({url})\n\n> Téléchargement impossible ({exc})."
+            assets.append(asset_path)
+            rel_path = asset_path.relative_to(work_dir)
+            title_part = f' "{title}"' if title else ""
+            return f"![{alt}]({rel_path.as_posix()}{title_part})"
+
+        updated = _REMOTE_IMAGE_PATTERN.sub(replace, markdown_text)
         return updated, assets

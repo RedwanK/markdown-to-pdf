@@ -29,6 +29,18 @@ markdown-pdf convert examples --output-dir dist/ \
   --meta examples/metadata.yaml
 ```
 
+### Exemples de contenus
+
+Le dossier `examples/showcase/` propose des fichiers prêts à l'emploi couvrant les blocs Markdown supportés :
+
+- `examples/showcase/mermaid.md` – diagrammes Mermaid.
+- `examples/showcase/plantuml.md` – diagrammes PlantUML.
+- `examples/showcase/lists.md` – listes à puces, numérotées et cases à cocher.
+- `examples/showcase/tables.md` – tableaux multi-pages stylés.
+- `examples/showcase/titles.md` – hiérarchie de titres et front matter.
+- `examples/showcase/code-blocks.md` – extraits de code (shell, Python, JSON...).
+- `examples/showcase/text-and-media.md` – emphase, citations, images et liens.
+
 ### Personnalisation
 
 - `--template` : fournir un template LaTeX Jinja personnalisé.
@@ -37,6 +49,7 @@ markdown-pdf convert examples --output-dir dist/ \
 - `--disable-mermaid` ou options `--mermaid-*` pour maîtriser le rendu des diagrammes (par défaut rendu en PNG, compatible XeLaTeX).
 - `--disable-plantuml` ou options `--plantuml-*` pour activer/désactiver et configurer le rendu PlantUML (format, charset, arguments supplémentaires).
 - `--mermaid-puppeteer-arg "--no-sandbox"` si Chromium n'a pas accès au sandbox (ex. serveurs verrouillés).
+- `--disable-remote-images` / `--remote-image-*` pour contrôler le téléchargement des images référencées par URL.
 
 La conversion inclut automatiquement une page de couverture basée sur les métadonnées ainsi qu'une table des matières placée avant le contenu.
 

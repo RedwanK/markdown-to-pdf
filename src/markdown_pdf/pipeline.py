@@ -16,6 +16,7 @@ from .markdown_preprocessor import MarkdownPreprocessor
 from .mermaid import MermaidRenderer
 from .plantuml import PlantUMLRenderer
 from .pandoc import PandocConverter
+from .remote_images import RemoteImageDownloader
 
 
 class MarkdownPDFBuilder:
@@ -25,9 +26,13 @@ class MarkdownPDFBuilder:
         self._options = options
         self._mermaid_renderer = MermaidRenderer(options.mermaid) if options.mermaid.enabled else None
         self._plantuml_renderer = PlantUMLRenderer(options.plantuml) if options.plantuml.enabled else None
+        self._remote_image_downloader = (
+            RemoteImageDownloader(options.remote_images) if options.remote_images.enabled else None
+        )
         self._preprocessor = MarkdownPreprocessor(
             self._mermaid_renderer,
             self._plantuml_renderer,
+            self._remote_image_downloader,
         )
         self._pandoc = PandocConverter(options.pandoc)
         self._template = TemplateRenderer(options.template)

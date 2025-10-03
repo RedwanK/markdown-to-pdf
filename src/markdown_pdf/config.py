@@ -92,11 +92,19 @@ class PlantUMLConfig(BaseModel):
     extra_args: list[str] = Field(default_factory=list)
 
 
+class RemoteImageConfig(BaseModel):
+    """Paramètres de récupération des images distantes référencées en Markdown."""
+
+    enabled: bool = True
+    timeout: float = 10.0
+    user_agent: str = "markdown-pdf/0.1"
+
+
 class PandocConfig(BaseModel):
     """Paramètres pour l'appel à Pandoc."""
 
     executable: str = "pandoc"
-    from_format: str = "markdown"
+    from_format: str = "markdown+lists_without_preceding_blankline"
     to_format: str = "latex"
     extra_args: list[str] = Field(default_factory=lambda: ["--listings"])
 
@@ -117,6 +125,7 @@ class ConversionOptions(BaseModel):
     metadata: DocumentMetadata = Field(default_factory=DocumentMetadata)
     mermaid: MermaidConfig = Field(default_factory=MermaidConfig)
     plantuml: PlantUMLConfig = Field(default_factory=PlantUMLConfig)
+    remote_images: RemoteImageConfig = Field(default_factory=RemoteImageConfig)
     pandoc: PandocConfig = Field(default_factory=PandocConfig)
     latex: LatexEngineConfig = Field(default_factory=LatexEngineConfig)
     keep_temp_dir: bool = False
