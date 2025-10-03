@@ -15,6 +15,7 @@ from .config import (
     LatexEngineConfig,
     MermaidConfig,
     PandocConfig,
+    PlantUMLConfig,
     TemplateConfig,
 )
 from .pipeline import MarkdownPDFBuilder
@@ -77,11 +78,24 @@ def convert(
         "--mermaid-puppeteer-arg",
         help="Argument passé à Chromium via Puppeteer (par ex. --no-sandbox).",
     ),
+    disable_plantuml: bool = typer.Option(
+        False,
+        "--disable-plantuml",
+        help="Désactiver le rendu PlantUML.",
+    ),
+    plantuml_cli_path: Optional[str] = typer.Option(None, "--plantuml-cli", help="Chemin du binaire plantuml."),
+    plantuml_format: str = typer.Option("png", "--plantuml-format", help="Format PlantUML (png/svg/eps/pdf)."),
+    plantuml_charset: str = typer.Option("UTF-8", "--plantuml-charset", help="Encodage utilisé par PlantUML."),
+    plantuml_arg: List[str] = typer.Option(
+        [],
+        "--plantuml-arg",
+        help="Argument supplémentaire transmis à plantuml.",
+    ),
     keep_temp: bool = typer.Option(False, "--keep-temp", help="Conserver le répertoire temporaire."),
     pandoc_path: Optional[str] = typer.Option(None, "--pandoc", help="Chemin de l'exécutable pandoc."),
     pandoc_arg: List[str] = typer.Option([], "--pandoc-arg", help="Argument additionnel passé à Pandoc (répétable)."),
     latex_engine: Optional[str] = typer.Option(None, "--latex-engine", help="Moteur LaTeX (xelatex/pdflatex/tectonic)."),
-    latex_runs: int = typer.Option(1, "--latex-runs", help="Nombre de passes LaTeX."),
+    latex_runs: int = typer.Option(2, "--latex-runs", help="Nombre de passes LaTeX."),
     latex_arg: List[str] = typer.Option([], "--latex-arg", help="Argument supplémentaire passé au moteur LaTeX."),
 ) -> None:
     """Convertit un ou plusieurs fichiers Markdown en PDF."""
@@ -109,6 +123,15 @@ def convert(
         config_file=mermaid_config_file,
         extra_args=default_mermaid.extra_args + mermaid_arg,
         puppeteer_args=default_mermaid.puppeteer_args + mermaid_puppeteer_arg,
+    )
+
+    default_plantuml = PlantUMLConfig()
+    plantuml_config = PlantUMLConfig(
+        enabled=not disable_plantuml,
+        cli_path=plantuml_cli_path or default_plantuml.cli_path,
+        output_format=plantuml_format,
+        charset=plantuml_charset,
+        extra_args=default_plantuml.extra_args + plantuml_arg,
     )
 
     default_pandoc = PandocConfig()
@@ -143,6 +166,7 @@ def convert(
         template=template_config,
         metadata=metadata,
         mermaid=mermaid_config,
+        plantuml=plantuml_config,
         pandoc=pandoc_config,
         latex=latex_config,
         keep_temp_dir=keep_temp,

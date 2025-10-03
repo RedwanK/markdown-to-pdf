@@ -1,0 +1,13 @@
+\begin{center}
+{\MarkdownPDFTitleFont\Large Table des matières}
+\end{center}
+
+\vspace{1.5em}
+
+\begin{flushleft}
+{% for entry in toc_entries %}
+{% set indent_value = (entry.level - 1) * 1.5 %}
+{% set indent_cmd = '\\hspace*{' ~ ('%.1f' % indent_value) ~ 'em}' %}
+\noindent{{ indent_cmd }}\hyperlink{{'{'}}{{- entry.target -}}{{'}'}}{{'{'}}{{- entry.title | safe -}}{{'}'}}\dotfill\pageref{{'{'}}{{- entry.label -}}{{'}'}}\\[0.25em]
+{% endfor %}
+\end{flushleft}

@@ -1,7 +1,17 @@
 \documentclass[11pt]{article}
 \usepackage[a4paper,margin=25mm]{geometry}
 \usepackage{fontspec}
-\setmainfont{Latin Modern Roman}
+{% set default_body_font = "Latin Modern Roman" %}
+{% set body_font = metadata.body_font | default(default_body_font, true) %}
+{% set body_font_clean = body_font | latex_escape | trim %}
+{% set default_body_font_clean = default_body_font | latex_escape | trim %}
+{% set set_body_font_cmd = '\\setmainfont{' ~ body_font_clean ~ '}' %}
+{% set set_default_body_font_cmd = '\\setmainfont{' ~ default_body_font_clean ~ '}' %}
+\IfFontExistsTF{ {{- body_font_clean -}} }{
+  {{ set_body_font_cmd }}
+}{
+  {{ set_default_body_font_cmd }}
+}
 \usepackage{graphicx}
 \usepackage{float}
 \floatplacement{figure}{H}
@@ -15,6 +25,31 @@
 \usepackage{setspace}
 \usepackage{listings}
 \usepackage{amssymb}
+\usepackage{longtable,booktabs,array}
+\usepackage{calc}
+\usepackage{etoolbox}
+\usepackage{sectsty}
+
+{% set title_font_candidate = metadata.title_font | default(body_font, true) %}
+{% set title_font_clean = title_font_candidate | latex_escape | trim %}
+{% set title_font_cmd = '\\newfontfamily\\MarkdownPDFTitleFont{' ~ title_font_clean ~ '}' %}
+{% set title_default_cmd = '\\newfontfamily\\MarkdownPDFTitleFont{' ~ default_body_font_clean ~ '}' %}
+\IfFontExistsTF{ {{- title_font_clean -}} }{
+  {{ title_font_cmd }}
+}{
+  {{ title_default_cmd }}
+}
+
+{% set raw_title_color = metadata.title_color | default("#1A1A1A", true) %}
+{% if "#" in raw_title_color %}
+\definecolor{MarkdownPDFTitleColor}{HTML}{ {{- raw_title_color.replace('#', '') | upper -}} }
+{% else %}
+\colorlet{MarkdownPDFTitleColor}{ {{- raw_title_color | latex_escape -}} }
+{% endif %}
+
+\sectionfont{\color{MarkdownPDFTitleColor}\MarkdownPDFTitleFont}
+\subsectionfont{\color{MarkdownPDFTitleColor}\MarkdownPDFTitleFont}
+\subsubsectionfont{\color{MarkdownPDFTitleColor}\MarkdownPDFTitleFont}
 
 {% raw %}
 \providecommand{\passthrough}[1]{#1}
@@ -34,6 +69,15 @@
   \setlength{\parskip}{0pt}
 }
 
+% Longtable fixes inspired by Pandoc's default template
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+
+\setlength{\emergencystretch}{2em}
+
 \pagestyle{fancy}
 \fancyhf{}
 
@@ -41,7 +85,7 @@
 \fancyhead[L]{\ignorespaces
   \begin{minipage}[c]{0.6\textwidth}%
   \raggedright
-  {\Large {{ metadata.title | default(metadata.company, true) | latex_escape }}}\\
+  {\Large \textcolor{MarkdownPDFTitleColor}{\MarkdownPDFTitleFont {{ metadata.title | default(metadata.company, true) | latex_escape }}}}\\
   {\small {{ metadata.author | latex_escape | default("", true) }}}%
   \end{minipage}%
 }
@@ -69,6 +113,20 @@
 \begin{document}
 
 \onehalfspacing
+
+\pagenumbering{gobble}
+{% include 'cover.tex.j2' %}
+\clearpage
+
+{% if toc_entries %}
+\thispagestyle{empty}
+{% include 'toc.tex.j2' %}
+\clearpage
+{% endif %}
+
+\pagenumbering{arabic}
+\setcounter{page}{1}
+\pagestyle{fancy}
 
 {{ body | safe }}
 

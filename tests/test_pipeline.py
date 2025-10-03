@@ -2,7 +2,13 @@ from pathlib import Path
 
 import pytest
 
-from markdown_pdf.config import ConversionOptions, DocumentMetadata, MermaidConfig, TemplateConfig
+from markdown_pdf.config import (
+    ConversionOptions,
+    DocumentMetadata,
+    MermaidConfig,
+    PlantUMLConfig,
+    TemplateConfig,
+)
 from markdown_pdf.pipeline import MarkdownPDFBuilder
 
 
@@ -33,6 +39,7 @@ def test_pipeline_converts_using_mocks(monkeypatch, tmp_path: Path, markdown_fil
         template=TemplateConfig(),
         metadata=DocumentMetadata(title="Titre"),
         mermaid=MermaidConfig(enabled=False),
+        plantuml=PlantUMLConfig(enabled=False),
     )
 
     builder = MarkdownPDFBuilder(options)
@@ -67,6 +74,7 @@ def test_pipeline_concatenate_directory(monkeypatch, tmp_path: Path):
         template=TemplateConfig(),
         metadata=DocumentMetadata(title="Titre"),
         mermaid=MermaidConfig(enabled=False),
+        plantuml=PlantUMLConfig(enabled=False),
     )
 
     builder = MarkdownPDFBuilder(options)

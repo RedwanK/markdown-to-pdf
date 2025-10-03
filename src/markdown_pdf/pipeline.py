@@ -14,6 +14,7 @@ from .latex_engine import LatexCompiler
 from .latex_template import TemplateRenderer
 from .markdown_preprocessor import MarkdownPreprocessor
 from .mermaid import MermaidRenderer
+from .plantuml import PlantUMLRenderer
 from .pandoc import PandocConverter
 
 
@@ -23,7 +24,11 @@ class MarkdownPDFBuilder:
     def __init__(self, options: ConversionOptions) -> None:
         self._options = options
         self._mermaid_renderer = MermaidRenderer(options.mermaid) if options.mermaid.enabled else None
-        self._preprocessor = MarkdownPreprocessor(self._mermaid_renderer)
+        self._plantuml_renderer = PlantUMLRenderer(options.plantuml) if options.plantuml.enabled else None
+        self._preprocessor = MarkdownPreprocessor(
+            self._mermaid_renderer,
+            self._plantuml_renderer,
+        )
         self._pandoc = PandocConverter(options.pandoc)
         self._template = TemplateRenderer(options.template)
         self._compiler = LatexCompiler(options.latex)
@@ -83,6 +88,7 @@ class MarkdownPDFBuilder:
             resource_paths.extend(self._iter_resource_paths(markdown_paths))
             latex_body = self._pandoc.convert_to_latex(processed_md, resource_paths=resource_paths)
             latex_body = self._sanitize_latex(latex_body)
+            toc_entries = self._extract_toc_entries(latex_body)
 
             metadata = self._resolve_metadata(combined_front_matter, markdown_paths[0].parent)
             preamble_extra = (
@@ -95,6 +101,7 @@ class MarkdownPDFBuilder:
                 extra_context={
                     "front_matter": combined_front_matter,
                     "preamble_extra": preamble_extra,
+                    "toc_entries": toc_entries,
                 },
             )
 
@@ -145,3 +152,35 @@ class MarkdownPDFBuilder:
         latex_body = re.sub(r"^\s*\\\*?\s*$\n?", "", latex_body, flags=re.MULTILINE)
         latex_body = re.sub(r"\\\*?[ \t]*(?=\n\s*\\end\{)", "", latex_body)
         return latex_body
+
+    @staticmethod
+    def _extract_toc_entries(latex_body: str) -> list[dict[str, object]]:
+        """Récupère les sections pour alimenter une table des matières personnalisée."""
+
+        pattern = re.compile(
+            r"\\hypertarget\{(?P<target>[^}]+)\}\{%\s*\\(?P<command>section|subsection|subsubsection|paragraph|subparagraph)\{(?P<title>.*?)\}\\label\{(?P<label>[^}]+)\}\}",
+            flags=re.DOTALL,
+        )
+        level_map = {
+            "section": 1,
+            "subsection": 2,
+            "subsubsection": 3,
+            "paragraph": 4,
+            "subparagraph": 5,
+        }
+        entries: list[dict[str, object]] = []
+        for match in pattern.finditer(latex_body):
+            command = match.group("command")
+            level = level_map.get(command)
+            if level is None:
+                continue
+            title = match.group("title").replace("\n", " ").strip()
+            entries.append(
+                {
+                    "level": level,
+                    "title": title,
+                    "target": match.group("target"),
+                    "label": match.group("label"),
+                }
+            )
+        return entries
