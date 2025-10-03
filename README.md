@@ -5,7 +5,7 @@ Outil CLI pour convertir des fichiers Markdown en PDF stylisés en s'appuyant su
 ## Installation (développement)
 
 ```bash
-pip install -e .[dev]
+pipx install -e .[dev]
 ```
 
 ## Dépendances système
@@ -18,16 +18,10 @@ pip install -e .[dev]
 ## Usage rapide
 
 ```bash
-markdown-pdf convert examples/sample.md --output-dir dist/ \
-  --meta examples/metadata.yaml
+markdown-pdf examples/ --meta examples/metadata.yaml -f example.pdf
 ```
 
 Pour fusionner plusieurs fichiers d'un dossier dans un unique PDF :
-
-```bash
-markdown-pdf convert examples --output-dir dist/ \
-  --meta examples/metadata.yaml
-```
 
 ### Exemples de contenus
 
@@ -46,6 +40,7 @@ Le dossier `examples/showcase/` propose des fichiers prêts à l'emploi couvrant
 - `--template` : fournir un template LaTeX Jinja personnalisé.
 - `--preamble` : injecter un fichier LaTeX supplémentaire dans le préambule.
 - `--meta` (fichier YAML/JSON) / `--meta-entry cle=valeur` : en-tête/pied personnalisables (logo, adresse, contact...). Les fichiers Markdown n'ont plus besoin de front matter et peuvent définir `title_color`, `title_font`, `body_font` ou encore `extra.subtitle` / `extra.cover_notes` pour la couverture.
+- `logo_path` (dans les métadonnées) permet d'afficher un logo sur la page de couverture ; utilisez un chemin relatif au document.
 - `--disable-mermaid` ou options `--mermaid-*` pour maîtriser le rendu des diagrammes (par défaut rendu en PNG, compatible XeLaTeX).
 - `--disable-plantuml` ou options `--plantuml-*` pour activer/désactiver et configurer le rendu PlantUML (format, charset, arguments supplémentaires).
 - `--mermaid-puppeteer-arg "--no-sandbox"` si Chromium n'a pas accès au sandbox (ex. serveurs verrouillés).

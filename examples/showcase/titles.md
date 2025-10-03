@@ -22,6 +22,7 @@ title: Mon Rapport
 author: Jane Doe
 company: ACME Corp
 contact: data-team@example.com
+logo_path: assets/logo.png
 ---
 ```
 

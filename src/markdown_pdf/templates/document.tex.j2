@@ -138,7 +138,6 @@
 \fancyhead[R]{\ignorespaces
   \begin{minipage}[c]{0.35\textwidth}%
   \raggedleft
-  {% if metadata.logo_path %}\includegraphics[height=1.2cm]{ {{ metadata.logo_path }} }\\{% endif %}
   {\small {{ metadata.contact | latex_escape | default("", true) }}}%
   \end{minipage}%
 }
