@@ -139,7 +139,6 @@ class ConversionOptions(BaseModel):
 # Remplissez les champs souhaités puis utilisez ce fichier avec `--meta`.
 # Les champs optionnels peuvent être supprimés.
 
----
 title: Nom du document
 company: Société
 author: Responsable du contenu
@@ -156,7 +155,6 @@ body_font: "TeX Iwona"
 extra:
   subtitle: Sous-titre optionnel
   cover_notes: Notes supplémentaires sur la couverture
----
             """.strip()
         )
     )
