@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any, Dict, Optional
+import textwrap
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -129,6 +130,36 @@ class ConversionOptions(BaseModel):
     pandoc: PandocConfig = Field(default_factory=PandocConfig)
     latex: LatexEngineConfig = Field(default_factory=LatexEngineConfig)
     keep_temp_dir: bool = False
+    include_cover: bool = True
+    include_toc: bool = True
+    meta_template: str = Field(
+        default_factory=lambda: textwrap.dedent(
+            """
+# Metadata template for markdown-pdf
+# Remplissez les champs souhaités puis utilisez ce fichier avec `--meta`.
+# Les champs optionnels peuvent être supprimés.
+
+---
+title: Nom du document
+company: Société
+author: Responsable du contenu
+contact: email@example.com
+address: 12 rue de la documentation, 75000 Paris
+logo_path: assets/logo.png
+
+# Couleurs et polices (optionnels)
+title_color: "#0F4C81"
+title_font: "TeX Gyre Heros"
+body_font: "TeX Iwona"
+
+# Informations additionnelles affichées sur la couverture
+extra:
+  subtitle: Sous-titre optionnel
+  cover_notes: Notes supplémentaires sur la couverture
+---
+            """.strip()
+        )
+    )
 
     @field_validator("output_dir", mode="before")
     @classmethod

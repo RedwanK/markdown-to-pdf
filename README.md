@@ -18,10 +18,20 @@ pipx install -e .[dev]
 ## Usage rapide
 
 ```bash
-markdown-pdf examples/ --meta examples/metadata.yaml -f example.pdf
+markdown-pdf convert examples/ --meta examples/metadata.yaml -f example.pdf
+```
+
+Pour générer rapidement un fichier de métadonnées prêt à l'emploi dans le dossier courant :
+
+```bash
+markdown-pdf init-metadata
 ```
 
 Pour fusionner plusieurs fichiers d'un dossier dans un unique PDF :
+
+```bash
+markdown-pdf convert docs/chapitres --output-dir dist
+```
 
 ### Exemples de contenus
 
@@ -43,8 +53,10 @@ Le dossier `examples/showcase/` propose des fichiers prêts à l'emploi couvrant
 - `logo_path` (dans les métadonnées) permet d'afficher un logo sur la page de couverture ; utilisez un chemin relatif au document.
 - `--disable-mermaid` ou options `--mermaid-*` pour maîtriser le rendu des diagrammes (par défaut rendu en PNG, compatible XeLaTeX).
 - `--disable-plantuml` ou options `--plantuml-*` pour activer/désactiver et configurer le rendu PlantUML (format, charset, arguments supplémentaires).
+- `--no-cover` / `--no-toc` pour supprimer respectivement la couverture ou la table des matières et générer un PDF simplifié.
 - `--mermaid-puppeteer-arg "--no-sandbox"` si Chromium n'a pas accès au sandbox (ex. serveurs verrouillés).
 - `--disable-remote-images` / `--remote-image-*` pour contrôler le téléchargement des images référencées par URL.
+- Les balises HTML simples avec attribut `style` (`<span>`, `<div>`, `<p>`) sont traduites en commandes LaTeX (couleurs, alignements, emphases) pour faciliter la mise en forme avancée.
 
 La conversion inclut automatiquement une page de couverture basée sur les métadonnées ainsi qu'une table des matières placée avant le contenu.
 

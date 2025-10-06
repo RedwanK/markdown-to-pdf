@@ -12,6 +12,7 @@ import yaml
 from .mermaid import MermaidRenderer, MermaidRenderingError
 from .plantuml import PlantUMLRenderer, PlantUMLRenderingError
 from .remote_images import RemoteImageDownloader, RemoteImageError
+from .html_styles import apply_html_styles
 
 _FRONT_MATTER_PATTERN = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
 _MERMAID_PATTERN = re.compile(r"```mermaid\s*\n(.*?)\n```", re.DOTALL)
@@ -47,6 +48,7 @@ class MarkdownPreprocessor:
         assets.extend(plantuml_assets)
         processed, remote_assets = self._download_remote_images(processed, work_dir, doc_stem)
         assets.extend(remote_assets)
+        processed = apply_html_styles(processed)
         return PreprocessResult(markdown=processed, front_matter=front_matter, assets=assets)
 
     @staticmethod

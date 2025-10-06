@@ -159,11 +159,20 @@
 
 \onehalfspacing
 
+{% set cover_enabled = show_cover | default(true) %}
+{% set toc_enabled = show_toc | default(true) %}
+{% set toc_present = toc_entries and toc_enabled %}
+
+{% if cover_enabled or toc_present %}
 \pagenumbering{gobble}
+{% endif %}
+
+{% if cover_enabled %}
 {% include 'cover.tex.j2' %}
 \clearpage
+{% endif %}
 
-{% if toc_entries %}
+{% if toc_present %}
 \thispagestyle{empty}
 {% include 'toc.tex.j2' %}
 \clearpage

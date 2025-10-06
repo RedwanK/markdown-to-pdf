@@ -62,6 +62,8 @@ def convert(
         "-f",
         help="Nom du PDF généré (relatif à --output-dir sauf chemin absolu).",
     ),
+    no_cover: bool = typer.Option(False, "--no-cover", help="Ne pas générer la page de couverture."),
+    no_toc: bool = typer.Option(False, "--no-toc", help="Ne pas générer la table des matières."),
     template_path: Optional[Path] = typer.Option(None, "--template", help="Template LaTeX Jinja personnalisé."),
     preamble_path: Optional[Path] = typer.Option(None, "--preamble", help="Fichier LaTeX à injecter dans le préambule."),
     preamble_inline: Optional[str] = typer.Option(None, "--preamble-inline", help="Code LaTeX inline ajouté au préambule."),
@@ -194,6 +196,8 @@ def convert(
         pandoc=pandoc_config,
         latex=latex_config,
         keep_temp_dir=keep_temp,
+        include_cover=not no_cover,
+        include_toc=not no_toc,
     )
 
     if output_file and len(sources) != 1:
@@ -217,6 +221,21 @@ def convert(
             _convert_directory(builder, source, markdown_files, output_path)
         else:
             _convert_single(builder, source, output_dir, custom_output)
+
+
+@app.command(help="Crée un fichier metadata YAML prêt à l'emploi dans le répertoire courant.")
+def init_metadata(
+    output: Path = typer.Option(Path("metadata.yaml"), "--output", "-o", help="Chemin du fichier à générer."),
+) -> None:
+    output = output.resolve()
+    if output.exists():
+        typer.secho(f"❌ {output} existe déjà.", fg=typer.colors.RED)
+        raise typer.Exit(code=1)
+
+    content = ConversionOptions(output_dir=Path("." )).meta_template
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(content, encoding="utf-8")
+    typer.secho(f"✅ Modèle de métadonnées créé: {output}", fg=typer.colors.GREEN)
 
 
 def _convert_single(

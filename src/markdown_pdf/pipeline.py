@@ -94,6 +94,8 @@ class MarkdownPDFBuilder:
             latex_body = self._pandoc.convert_to_latex(processed_md, resource_paths=resource_paths)
             latex_body = self._sanitize_latex(latex_body)
             toc_entries = self._extract_toc_entries(latex_body)
+            if not self._options.include_toc:
+                toc_entries = []
 
             metadata = self._resolve_metadata(combined_front_matter, markdown_paths[0].parent)
             preamble_extra = (
@@ -107,6 +109,8 @@ class MarkdownPDFBuilder:
                     "front_matter": combined_front_matter,
                     "preamble_extra": preamble_extra,
                     "toc_entries": toc_entries,
+                    "show_cover": self._options.include_cover,
+                    "show_toc": self._options.include_toc,
                 },
             )
 
