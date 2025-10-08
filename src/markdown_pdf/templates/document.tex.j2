@@ -3,15 +3,100 @@
 \usepackage{fontspec}
 {% set default_body_font = "Latin Modern Roman" %}
 {% set body_font = metadata.body_font | default(default_body_font, true) %}
-{% set body_font_clean = body_font | latex_escape | trim %}
-{% set default_body_font_clean = default_body_font | latex_escape | trim %}
-{% set set_body_font_cmd = '\\setmainfont{' ~ body_font_clean ~ '}' %}
-{% set set_default_body_font_cmd = '\\setmainfont{' ~ default_body_font_clean ~ '}' %}
-\IfFontExistsTF{ {{- body_font_clean -}} }{
-  {{ set_body_font_cmd }}
+{% set body_font_candidates = namespace(values=[]) %}
+{% for candidate in [
+  body_font,
+  "Latin Modern Roman",
+  "TeX Gyre Termes",
+  "TeX Gyre Pagella",
+  "TeX Gyre Heros",
+  "Times New Roman",
+  "Times",
+  "Helvetica Neue",
+  "Helvetica",
+  "Arial",
+  "Arial Unicode MS"
+] %}
+  {% if candidate %}
+    {% set value = candidate | string | trim %}
+    {% if value and value not in body_font_candidates.values %}
+      {% set _ = body_font_candidates.values.append(value) %}
+    {% endif %}
+  {% endif %}
+{% endfor %}
+
+{% set title_font_candidate = metadata.title_font | default(body_font, true) %}
+{% set title_font_candidates = namespace(values=[]) %}
+{% for candidate in [
+  title_font_candidate,
+  body_font,
+  default_body_font,
+  "TeX Gyre Termes",
+  "TeX Gyre Pagella",
+  "Montserrat",
+  "Helvetica Neue",
+  "Helvetica",
+  "Arial",
+  "Arial Unicode MS",
+  "Times New Roman",
+  "Times"
+] %}
+  {% if candidate %}
+    {% set value = candidate | string | trim %}
+    {% if value and value not in title_font_candidates.values %}
+      {% set _ = title_font_candidates.values.append(value) %}
+    {% endif %}
+  {% endif %}
+{% endfor %}
+
+{% macro font_fallback(fonts, command_template, warning=None, fallback_command='') -%}
+{% set sanitized = namespace(items=[]) %}
+{% for font in fonts %}
+  {% if font %}
+    {% set cleaned = font | string | trim %}
+    {% if cleaned %}
+      {% set escaped = cleaned | latex_escape %}
+      {% if escaped not in sanitized.items %}
+        {% set _ = sanitized.items.append(escaped) %}
+      {% endif %}
+    {% endif %}
+  {% endif %}
+{% endfor %}
+{% set count = sanitized.items | length %}
+{% if count > 0 %}
+{% for font in sanitized.items %}
+\IfFontExistsTF{ {{ font }} }{
+  {{ command_template | replace('__FONT__', font) }}
 }{
-  {{ set_default_body_font_cmd }}
+{% endfor %}
+  {% if warning %}
+  \PackageWarning{markdownpdf}{ {{ warning | latex_escape }} }
+  {% endif %}
+  {{ fallback_command }}
+{% for _ in range(count) %}
 }
+{% endfor %}
+{% else %}
+  {% if warning %}
+  \PackageWarning{markdownpdf}{ {{ warning | latex_escape }} }
+  {% endif %}
+  {{ fallback_command }}
+{% endif %}
+{%- endmacro %}
+
+\providecommand{\MarkdownPDFMainFontName}{Latin Modern Roman}
+{{ font_fallback(
+  body_font_candidates.values,
+  '\\setmainfont{__FONT__}\\renewcommand{\\MarkdownPDFMainFontName}{__FONT__}',
+  'Aucune police principale candidate ne peut etre chargee; utilisation des reglages par defaut.'
+) }}
+
+{{ font_fallback(
+  title_font_candidates.values,
+  '\\newfontfamily\\MarkdownPDFTitleFont{__FONT__}',
+  'Aucune police de titre candidate ne peut etre chargee; utilisation de la famille par defaut.',
+  '\\newcommand{\\MarkdownPDFTitleFont}{\\rmfamily}'
+) }}
 \usepackage{graphicx}
 \usepackage{float}
 \floatplacement{figure}{H}
@@ -31,17 +116,6 @@
 \usepackage{enumitem}
 \usepackage{colortbl}
 \usepackage{sectsty}
-
-{% set title_font_candidate = metadata.title_font | default(body_font, true) %}
-{% set title_font_clean = title_font_candidate | latex_escape | trim %}
-{% set title_font_cmd = '\\newfontfamily\\MarkdownPDFTitleFont{' ~ title_font_clean ~ '}' %}
-{% set title_default_cmd = '\\newfontfamily\\MarkdownPDFTitleFont{' ~ default_body_font_clean ~ '}' %}
-\IfFontExistsTF{ {{- title_font_clean -}} }{
-  {{ title_font_cmd }}
-}{
-  {{ title_default_cmd }}
-}
-
 {% set raw_title_color = metadata.title_color | default("#1A1A1A", true) %}
 {% if "#" in raw_title_color %}
 \definecolor{MarkdownPDFTitleColor}{HTML}{ {{- raw_title_color.replace('#', '') | upper -}} }
@@ -56,6 +130,9 @@
 
 {% raw %}
 \providecommand{\passthrough}[1]{#1}
+{% endraw %}
+{% raw %}
+\providecommand{\pandocbounded}[2][]{#2}
 {% endraw %}
 \lstset{
   basicstyle=\ttfamily\small,

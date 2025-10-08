@@ -34,7 +34,7 @@ def _parse_key_value(values: List[str]) -> Dict[str, str]:
     return parsed
 
 
-def _load_mapping_file(path: Optional[Path]) -> Dict[str, str]:
+def _load_mapping_file(path: Optional[Path]) -> Dict[str, object]:
     if not path:
         return {}
     if not path.exists():
@@ -50,6 +50,31 @@ def _load_mapping_file(path: Optional[Path]) -> Dict[str, str]:
     if not isinstance(data, dict):
         raise typer.BadParameter(f"Le fichier {path} doit contenir un objet clé/valeur.")
     return data
+
+
+def _normalize_metadata_dict(data: Dict[str, object]) -> Dict[str, object]:
+    """
+    Un fichier de métadonnées peut déclarer ses champs à la racine ou dans une
+    section imbriquée `metadata` (comme dans le front matter Markdown). Ce helper
+    aplatit cette section pour prendre en charge les deux écritures.
+    """
+
+    if not data:
+        return {}
+
+    # Work on a shallow copy so we keep the original mapping untouched.
+    remaining = dict(data)
+    merged: Dict[str, object] = {}
+
+    metadata_section = remaining.pop("metadata", None)
+    if isinstance(metadata_section, dict):
+        merged.update(metadata_section)
+    elif metadata_section is not None:
+        # Preserve non-dict values without discarding them.
+        merged["metadata"] = metadata_section
+
+    merged.update(remaining)
+    return merged
 
 
 @app.command()
@@ -121,8 +146,9 @@ def convert(
     output_dir = output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    metadata_data: Dict[str, str] = {}
-    metadata_data.update(_load_mapping_file(metadata_file))
+    metadata_data: Dict[str, object] = {}
+    file_metadata = _load_mapping_file(metadata_file)
+    metadata_data.update(_normalize_metadata_dict(file_metadata))
     metadata_data.update(_parse_key_value(meta_entry))
 
     template_config = TemplateConfig(
