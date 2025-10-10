@@ -149,7 +149,7 @@ logo_path: assets/logo.png
 # Couleurs et polices (optionnels)
 title_color: "#0F4C81"
 title_font: "TeX Gyre Heros"
-body_font: "TeX Iwona"
+body_font: "TeX Gyre Heros"
 
 # Informations additionnelles affichées sur la couverture
 extra:
