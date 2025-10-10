@@ -63,16 +63,18 @@
   {% endif %}
 {% endfor %}
 {% set count = sanitized.items | length %}
+{% set fallback_clean = fallback_command | default('', true) | trim %}
 {% if count > 0 %}
 {% for font in sanitized.items %}
-\IfFontExistsTF{ {{ font }} }{
-  {{ command_template | replace('__FONT__', font) }}
+  {% set formatted_command = command_template | replace('__FONT__', font) | trim %}
+\IfFontExistsTF{ {{- font | trim -}} }{
+  {{ formatted_command }}
 }{
 {% endfor %}
   {% if warning %}
   \PackageWarning{markdownpdf}{ {{ warning | latex_escape }} }
   {% endif %}
-  {{ fallback_command }}
+  {{ fallback_clean }}
 {% for _ in range(count) %}
 }
 {% endfor %}
@@ -80,7 +82,7 @@
   {% if warning %}
   \PackageWarning{markdownpdf}{ {{ warning | latex_escape }} }
   {% endif %}
-  {{ fallback_command }}
+  {{ fallback_clean }}
 {% endif %}
 {%- endmacro %}
 
