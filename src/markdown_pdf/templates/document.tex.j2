@@ -211,7 +211,6 @@
   \begin{minipage}[c]{0.6\textwidth}%
   \raggedright
   {\Large \textcolor{MarkdownPDFTitleColor}{\MarkdownPDFTitleFont {{ metadata.title | default(metadata.company, true) | latex_escape }}}}\\
-  {\small {{ metadata.author | latex_escape | default("", true) }}}%
   \end{minipage}%
 }
 \fancyhead[R]{\ignorespaces

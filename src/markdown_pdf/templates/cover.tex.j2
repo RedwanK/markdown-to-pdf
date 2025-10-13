@@ -26,6 +26,22 @@
 {\large {{ metadata.company | latex_escape }}}\par
 {% endif %}
 
+{% if version_history %}
+\vspace{1.5cm}
+\begin{center}
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}llllp{6cm}@{}}
+\toprule
+Version & Date & Heure & Auteur & Note \\
+\midrule
+{% for entry in version_history %}
+{{ entry.version }} & {{ entry.date | latex_escape }} & {{ entry.time | latex_escape }} & {{ entry.author | default("-", true) | latex_escape }} & {{ entry.note | default("-", true) | latex_escape }} \\
+{% endfor %}
+\bottomrule
+\end{tabular}
+\end{center}
+{% endif %}
+
 {% set cover_notes = metadata.extra.get('cover_notes') if metadata.extra else None %}
 {% if cover_notes %}
 \vspace{2cm}

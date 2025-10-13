@@ -24,6 +24,13 @@ from .pipeline import MarkdownPDFBuilder
 app = typer.Typer(help="Convertit des fichiers Markdown en PDF en s'appuyant sur LaTeX.")
 
 
+def _prompt_version_note(option_value: Optional[str], target_pdf: Path) -> str:
+    if option_value is not None:
+        return option_value
+    note = typer.prompt(f"Note de version pour {target_pdf.name}", default="")
+    return note.strip()
+
+
 def _parse_key_value(values: List[str]) -> Dict[str, str]:
     parsed: Dict[str, str] = {}
     for raw in values:
@@ -140,6 +147,12 @@ def convert(
     latex_engine: Optional[str] = typer.Option(None, "--latex-engine", help="Moteur LaTeX (xelatex/pdflatex/tectonic)."),
     latex_runs: int = typer.Option(2, "--latex-runs", help="Nombre de passes LaTeX."),
     latex_arg: List[str] = typer.Option([], "--latex-arg", help="Argument supplémentaire passé au moteur LaTeX."),
+    version_note: Optional[str] = typer.Option(
+        None,
+        "--version-note",
+        "-n",
+        help="Note de version associée au PDF généré (sinon demandé lors de l'exécution).",
+    ),
 ) -> None:
     """Convertit un ou plusieurs fichiers Markdown en PDF."""
 
@@ -244,9 +257,9 @@ def convert(
                 typer.secho(f"⚠️ {source}: aucun fichier Markdown trouvé.", fg=typer.colors.YELLOW)
                 continue
             output_path = custom_output if custom_output else output_dir / f"{source.name}.pdf"
-            _convert_directory(builder, source, markdown_files, output_path)
+            _convert_directory(builder, source, markdown_files, output_path, version_note)
         else:
-            _convert_single(builder, source, output_dir, custom_output)
+            _convert_single(builder, source, output_dir, custom_output, version_note)
 
 
 @app.command(help="Crée un fichier metadata YAML prêt à l'emploi dans le répertoire courant.")
@@ -269,9 +282,12 @@ def _convert_single(
     markdown_file: Path,
     output_dir: Path,
     output_path: Optional[Path] = None,
+    version_note_option: Optional[str] = None,
 ) -> None:
+    target_pdf = output_path if output_path else (output_dir / f"{markdown_file.stem}.pdf")
+    note = _prompt_version_note(version_note_option, target_pdf)
     try:
-        result = builder.convert(markdown_file, output_path=output_path)
+        result = builder.convert(markdown_file, output_path=output_path, version_note=note)
     except Exception as exc:  # pragma: no cover - feedback utilisateur
         typer.secho(f"❌ {markdown_file}: {exc}", fg=typer.colors.RED)
         return
@@ -287,9 +303,11 @@ def _convert_directory(
     source_dir: Path,
     markdown_files: list[Path],
     output_path: Path,
+    version_note_option: Optional[str] = None,
 ) -> None:
+    note = _prompt_version_note(version_note_option, output_path)
     try:
-        result = builder.convert_many(markdown_files, output_path=output_path)
+        result = builder.convert_many(markdown_files, output_path=output_path, version_note=note)
     except Exception as exc:  # pragma: no cover - feedback utilisateur
         typer.secho(f"❌ {source_dir}: {exc}", fg=typer.colors.RED)
         return

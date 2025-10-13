@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 import shutil
 import tempfile
+from datetime import datetime
 from contextlib import ExitStack
 from pathlib import Path
 from typing import Iterable, Optional, Sequence
@@ -17,6 +18,7 @@ from .mermaid import MermaidRenderer
 from .plantuml import PlantUMLRenderer
 from .pandoc import PandocConverter
 from .remote_images import RemoteImageDownloader
+from .versioning import VersionManager
 
 
 class MarkdownPDFBuilder:
@@ -38,17 +40,35 @@ class MarkdownPDFBuilder:
         self._template = TemplateRenderer(options.template)
         self._compiler = LatexCompiler(options.latex)
 
-    def convert(self, markdown_path: Path, output_path: Optional[Path] = None) -> Path:
+    def convert(
+        self,
+        markdown_path: Path,
+        output_path: Optional[Path] = None,
+        *,
+        version_note: Optional[str] = None,
+    ) -> Path:
         markdown_path = markdown_path.resolve()
-        return self._convert_documents([markdown_path], output_path)
+        return self._convert_documents([markdown_path], output_path, version_note=version_note)
 
-    def convert_many(self, markdown_paths: Sequence[Path], output_path: Optional[Path] = None) -> Path:
+    def convert_many(
+        self,
+        markdown_paths: Sequence[Path],
+        output_path: Optional[Path] = None,
+        *,
+        version_note: Optional[str] = None,
+    ) -> Path:
         resolved_paths = [path.resolve() for path in markdown_paths]
         if not resolved_paths:
             raise ValueError("Aucun fichier Markdown fourni pour la conversion groupée.")
-        return self._convert_documents(resolved_paths, output_path)
+        return self._convert_documents(resolved_paths, output_path, version_note=version_note)
 
-    def _convert_documents(self, markdown_paths: Sequence[Path], output_path: Optional[Path]) -> Path:
+    def _convert_documents(
+        self,
+        markdown_paths: Sequence[Path],
+        output_path: Optional[Path],
+        *,
+        version_note: Optional[str],
+    ) -> Path:
         output_dir = self._options.output_dir.resolve()
         output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -59,6 +79,17 @@ class MarkdownPDFBuilder:
                 stem = markdown_paths[0].parent.name or markdown_paths[0].stem
             output_path = output_dir / f"{stem}.pdf"
         output_path = output_path.resolve()
+
+        version_manager = VersionManager(output_dir)
+        history_entries = version_manager.history_for(output_path.name)
+        bootstrap_entry = None
+        if not version_manager.version_file_exists and output_path.exists():
+            bootstrap_entry = version_manager.build_entry_from_existing_pdf(output_path)
+            if bootstrap_entry:
+                history_entries = [*history_entries, bootstrap_entry]
+
+        new_version_entry = None
+        version_history_context: list[dict[str, object]] = []
 
         with ExitStack() as stack:
             if self._options.keep_temp_dir:
@@ -102,6 +133,18 @@ class MarkdownPDFBuilder:
                 combined_front_matter.get("preamble") if isinstance(combined_front_matter, dict) else None
             )
 
+            timestamp = datetime.now()
+            next_version_number = history_entries[-1].version + 1 if history_entries else 1
+            new_version_entry = version_manager.build_entry(
+                version=next_version_number,
+                timestamp=timestamp,
+                filename=output_path.name,
+                author=metadata.author,
+                note=version_note,
+            )
+            version_history_for_template = [*history_entries, new_version_entry]
+            version_history_context = [entry.as_dict() for entry in version_history_for_template]
+
             tex_content = self._template.render(
                 body_latex=latex_body,
                 metadata=metadata,
@@ -111,6 +154,7 @@ class MarkdownPDFBuilder:
                     "toc_entries": toc_entries,
                     "show_cover": self._options.include_cover,
                     "show_toc": self._options.include_toc,
+                    "version_history": version_history_context,
                 },
             )
 
@@ -122,6 +166,9 @@ class MarkdownPDFBuilder:
             pdf_path = self._compiler.compile(tex_file, search_paths=search_paths)
 
             shutil.copy2(pdf_path, output_path)
+
+        if new_version_entry:
+            version_manager.append_entries([new_version_entry], bootstrap_entry=bootstrap_entry)
 
         return output_path
 
