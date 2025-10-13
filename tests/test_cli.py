@@ -52,9 +52,10 @@ def test_convert_accepts_nested_metadata_section(tmp_path: Path, monkeypatch):
         def __init__(self, options):
             captured["metadata"] = options.metadata
 
-        def convert(self, markdown_file, output_path=None):
+        def convert(self, markdown_file, output_path=None, version_note=None):
             pdf_path = tmp_path / "doc.pdf"
             pdf_path.write_bytes(b"PDF")
+            captured["version_note"] = version_note
             return pdf_path
 
     monkeypatch.setattr("markdown_pdf.cli.MarkdownPDFBuilder", DummyBuilder)
@@ -68,6 +69,8 @@ def test_convert_accepts_nested_metadata_section(tmp_path: Path, monkeypatch):
             str(metadata_file),
             "--output-dir",
             str(tmp_path),
+            "--version-note",
+            "Note CLI",
         ],
     )
 
@@ -77,3 +80,4 @@ def test_convert_accepts_nested_metadata_section(tmp_path: Path, monkeypatch):
     assert metadata.body_font == "Custom Body"
     assert metadata.extra and metadata.extra.get("subtitle") == "Nested subtitle"
     assert metadata.company == "Example Corp"
+    assert captured["version_note"] == "Note CLI"

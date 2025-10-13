@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 import pytest
@@ -49,6 +50,18 @@ def test_pipeline_converts_using_mocks(monkeypatch, tmp_path: Path, markdown_fil
 
     assert result.exists()
     assert result.read_bytes() == b"PDF"
+
+    version_file = options.output_dir / ".version"
+    assert version_file.exists()
+    lines = version_file.read_text(encoding="utf-8").strip().splitlines()
+    assert len(lines) == 1
+    parts = lines[0].split("|")
+    assert parts[0] == "1"
+    assert re.match(r"\d{4}-\d{2}-\d{2}$", parts[1])
+    assert re.match(r"\d{2}:\d{2}$", parts[2])
+    assert parts[3] == ""
+    assert parts[4] == "sample.pdf"
+    assert parts[5] == ""
 
 
 def test_pipeline_concatenate_directory(monkeypatch, tmp_path: Path):
@@ -141,3 +154,87 @@ def test_pipeline_can_disable_cover_and_toc(monkeypatch, tmp_path: Path, markdow
     assert ctx["show_cover"] is False
     assert ctx["show_toc"] is False
     assert ctx["toc_entries"] == []
+    history = ctx["version_history"]
+    assert len(history) == 1
+    assert history[0]["version"] == 1
+    assert history[0]["filename"] == "sample.pdf"
+    assert history[0]["note"] == ""
+
+
+def test_pipeline_versioning_appends_entries(monkeypatch, tmp_path: Path, markdown_file: Path):
+    def fake_pandoc_convert(self, markdown_file, resource_paths=()):
+        return "\\section{Bonjour}"
+
+    def fake_compile(self, tex_file: Path, search_paths=()):
+        pdf_path = tex_file.with_suffix(".pdf")
+        pdf_path.write_bytes(b"PDF")
+        return pdf_path
+
+    monkeypatch.setattr("markdown_pdf.pandoc.PandocConverter.convert_to_latex", fake_pandoc_convert)
+    monkeypatch.setattr("markdown_pdf.latex_engine.LatexCompiler.compile", fake_compile)
+
+    options = ConversionOptions(
+        output_dir=tmp_path / "out",
+        template=TemplateConfig(),
+        metadata=DocumentMetadata(title="Titre", author="Alice"),
+        mermaid=MermaidConfig(enabled=False),
+        plantuml=PlantUMLConfig(enabled=False),
+    )
+
+    builder = MarkdownPDFBuilder(options)
+    builder.convert(markdown_file, version_note="Initial import")
+    builder.convert(markdown_file, version_note="Mise a jour")
+
+    version_file = options.output_dir / ".version"
+    lines = version_file.read_text(encoding="utf-8").strip().splitlines()
+    assert len(lines) == 2
+    first_parts = lines[0].split("|")
+    second_parts = lines[1].split("|")
+    assert first_parts[0] == "1"
+    assert second_parts[0] == "2"
+    assert first_parts[5] == "Initial import"
+    assert second_parts[3] == "Alice"
+    assert second_parts[4] == "sample.pdf"
+    assert second_parts[5] == "Mise a jour"
+
+
+def test_pipeline_bootstrap_version_file(monkeypatch, tmp_path: Path, markdown_file: Path):
+    def fake_pandoc_convert(self, markdown_file, resource_paths=()):
+        return "\\section{Bonjour}"
+
+    def fake_compile(self, tex_file: Path, search_paths=()):
+        pdf_path = tex_file.with_suffix(".pdf")
+        pdf_path.write_bytes(b"PDF")
+        return pdf_path
+
+    monkeypatch.setattr("markdown_pdf.pandoc.PandocConverter.convert_to_latex", fake_pandoc_convert)
+    monkeypatch.setattr("markdown_pdf.latex_engine.LatexCompiler.compile", fake_compile)
+
+    options = ConversionOptions(
+        output_dir=tmp_path / "out",
+        template=TemplateConfig(),
+        metadata=DocumentMetadata(title="Titre"),
+        mermaid=MermaidConfig(enabled=False),
+        plantuml=PlantUMLConfig(enabled=False),
+    )
+
+    builder = MarkdownPDFBuilder(options)
+    builder.convert(markdown_file)
+
+    version_file = options.output_dir / ".version"
+    assert version_file.exists()
+    version_file.unlink()
+    existing_pdf = options.output_dir / "sample.pdf"
+    assert existing_pdf.exists()
+
+    builder.convert(markdown_file, version_note="Nouvelle compilation")
+
+    lines = version_file.read_text(encoding="utf-8").strip().splitlines()
+    assert len(lines) == 2
+    first_parts = lines[0].split("|")
+    second_parts = lines[1].split("|")
+    assert first_parts[0] == "1"
+    assert first_parts[4] == "sample.pdf"
+    assert first_parts[5] == ""
+    assert second_parts[0] == "2"
+    assert second_parts[5] == "Nouvelle compilation"
