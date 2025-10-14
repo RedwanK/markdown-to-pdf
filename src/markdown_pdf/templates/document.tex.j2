@@ -118,17 +118,38 @@
 \usepackage{enumitem}
 \usepackage{colortbl}
 \usepackage{sectsty}
-{% set raw_title_color = metadata.title_color | default("#1A1A1A", true) %}
-{% if "#" in raw_title_color %}
-\definecolor{MarkdownPDFTitleColor}{HTML}{ {{- raw_title_color.replace('#', '') | upper -}} }
-{% else %}
-\colorlet{MarkdownPDFTitleColor}{ {{- raw_title_color | latex_escape -}} }
-{% endif %}
+\usepackage{titlesec}
+\definecolor{MarkdownPDFTitleColor}{HTML}{000000}
 \definecolor{MarkdownPDFLinkColor}{HTML}{1A6FB3}
+\definecolor{MarkdownPDFMutedText}{HTML}{7A7A7A}
+{% set raw_accent_color = metadata.title_color | default("#0F4C81", true) %}
+{% if "#" in raw_accent_color %}
+\definecolor{MarkdownPDFAccentColor}{HTML}{ {{- raw_accent_color.replace('#', '') | upper -}} }
+{% else %}
+\colorlet{MarkdownPDFAccentColor}{ {{- raw_accent_color | latex_escape -}} }
+{% endif %}
 
-\sectionfont{\color{MarkdownPDFTitleColor}\MarkdownPDFTitleFont}
-\subsectionfont{\color{MarkdownPDFTitleColor}\MarkdownPDFTitleFont}
-\subsubsectionfont{\color{MarkdownPDFTitleColor}\MarkdownPDFTitleFont}
+\titleformat{\section}
+  {\color{MarkdownPDFTitleColor}\MarkdownPDFTitleFont\Large\bfseries}
+  {\thesection}
+  {1em}
+  {}
+  [{\vspace{-1em}\color{MarkdownPDFAccentColor}\rule{\linewidth}{0.1pt}}]
+\titlespacing*{\section}{0pt}{0em}{0em}
+
+\titleformat{\subsection}
+  {\color{MarkdownPDFTitleColor}\MarkdownPDFTitleFont\large\bfseries}
+  {\thesubsection}
+  {1em}
+  {}
+\titlespacing*{\subsection}{0pt}{1.2em}{0.6em}
+
+\titleformat{\subsubsection}
+  {\color{MarkdownPDFTitleColor}\MarkdownPDFTitleFont\normalsize\bfseries}
+  {\thesubsubsection}
+  {1em}
+  {}
+\titlespacing*{\subsubsection}{0pt}{1em}{0.5em}
 
 {% raw %}
 \providecommand{\passthrough}[1]{#1}
@@ -207,29 +228,69 @@
 }
 
 % Header configuration
+\newcommand{\MarkdownPDFHeaderInfo}{
+  \begingroup
+  \color{MarkdownPDFMutedText}\footnotesize
+  {% set header_lines = [] %}
+  {% if metadata.author %}
+    {% set _ = header_lines.append(metadata.author | latex_escape) %}
+  {% endif %}
+  {% if metadata.address %}
+    {% set _ = header_lines.append(metadata.address | latex_escape) %}
+  {% endif %}
+  {% if metadata.contact %}
+    {% set _ = header_lines.append(metadata.contact | latex_escape) %}
+  {% endif %}
+  {% for line in header_lines %}
+    {{ line }}{% if not loop.last %}\\[0.15em]{% endif %}
+  {% endfor %}
+  \endgroup
+}
+
+
 \fancyhead[L]{\ignorespaces
-  \begin{minipage}[c]{0.6\textwidth}%
+  \begin{minipage}[c]{0.48\textwidth}%
   \raggedright
-  {\Large \textcolor{MarkdownPDFTitleColor}{\MarkdownPDFTitleFont {{ metadata.title | default(metadata.company, true) | latex_escape }}}}\\
+  {% if metadata.logo_path %}
+    \vspace{0.1em}%
+    \includegraphics[height=1.2cm]{ {{ metadata.logo_path | latex_escape }} }%
+  {% else %}
+    {\color{MarkdownPDFTitleColor}\MarkdownPDFTitleFont\Large {{ metadata.title | default(metadata.company, true) | latex_escape }}}
+  {% endif %}
   \end{minipage}%
 }
 \fancyhead[R]{\ignorespaces
-  \begin{minipage}[c]{0.35\textwidth}%
+  \begin{minipage}[c]{0.48\textwidth}%
   \raggedleft
-  {\small {{ metadata.contact | latex_escape | default("", true) }}}%
+  \MarkdownPDFHeaderInfo
   \end{minipage}%
 }
 
+{% raw %}
+\makeatletter
+\renewcommand{\headrule}{%
+  \if@fancyplain\let\headrulewidth\plainheadrulewidth\fi
+  \vspace{4pt}%
+  {\color{MarkdownPDFMutedText}\hrule height 0.2pt width \headwidth}%
+  \vspace{6pt}%
+}
+\makeatother
+\renewcommand{\headrulewidth}{0pt}
+{% endraw %}
+
 % Footer configuration
-\fancyfoot[L]{\small {{ metadata.address | latex_escape | default("", true) }}}
-\fancyfoot[R]{\small Page \thepage{} / \pageref{LastPage}}
+\fancyfoot[L]{}
+\fancyfoot[C]{
+  \parbox[b]{0.6\textwidth}{\centering\scriptsize\itshape\color{MarkdownPDFMutedText}{Les informations contenues dans ce document sont strictement confidentielles et ne doivent en aucun cas êtres divulguées.}}
+}
+\fancyfoot[R]{\footnotesize\color{MarkdownPDFMutedText}{Page \thepage{} / {\color{MarkdownPDFAccentColor}\pageref{LastPage}}}}
 
 {% if preamble %}
 % Extra preamble
 {{ preamble }}
 {% endif %}
 
-\setlength{\headheight}{32pt}
+\setlength{\headheight}{46pt}
 \setlength{\parskip}{0.8em}
 \setlength{\parindent}{0pt}
 
