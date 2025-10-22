@@ -147,7 +147,7 @@ address: 12 rue de la documentation, 75000 Paris
 logo_path: assets/logo.png
 
 # Couleurs et polices (optionnels)
-title_color: "#0F4C81"
+title_color: "#870160"
 title_font: "TeX Gyre Heros"
 body_font: "TeX Gyre Heros"
 
