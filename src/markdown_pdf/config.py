@@ -141,8 +141,8 @@ class ConversionOptions(BaseModel):
 
 title: Nom du document
 company: Société
-author: Responsable du contenu
-contact: email@example.com
+author: Redwan Kara
+contact: redwankara@@gmail.com
 address: 12 rue de la documentation, 75000 Paris
 logo_path: assets/logo.png
 
