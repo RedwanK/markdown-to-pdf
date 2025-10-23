@@ -44,7 +44,7 @@ Champs principaux (voir `src/markdown_pdf/config.py`) :
 | `author`     | Sous le titre de la couverture et dans l'en-tête. |
 | `contact`    | Coin supérieur droit de l'en-tête, et bas de la couverture. |
 | `address`    | Pied de page gauche et bas de couverture. |
-| `logo_path`  | Logo sur la couverture (chemin relatif au Markdown ou absolu). |
+| `logo_path`  | Logo sur la couverture (chemin relatif au fichier de métadonnées ou absolu). |
 | `title_color`| Couleur des titres, liens, en-têtes, format hex (`#RRGGBB`) ou nom LaTeX. |
 | `title_font` | Police dédiée aux titres (XeLaTeX `\newfontfamily`). |
 | `body_font`  | Police principale (`\setmainfont`). |
@@ -75,7 +75,7 @@ extra:
 
 Conseils :
 
-- `logo_path` est résolu en chemin absolu pendant le rendu : placez vos médias à côté du Markdown ou utilisez un chemin accessible depuis le template.
+- `logo_path` est résolu en chemin absolu pendant le rendu : via `--meta`, le chemin est interprété depuis le dossier du fichier de métadonnées ; dans un front matter Markdown, il reste relatif au fichier Markdown.
 - Les polices doivent être installées sur le système et disponibles pour XeLaTeX (`fc-list | grep "Nom"` pour vérifier).
 
 ## 4. Créer un template personnalisé

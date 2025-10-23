@@ -129,27 +129,47 @@
 \colorlet{MarkdownPDFAccentColor}{ {{- raw_accent_color | latex_escape -}} }
 {% endif %}
 
+{% raw %}
+\newcommand{\MarkdownPDFSubsectionTitle}[1]{%
+  {\color{MarkdownPDFAccentColor}\underline{\color{MarkdownPDFTitleColor}{#1}}}%
+}
+{%endraw%}
+
 \titleformat{\section}
   {\color{MarkdownPDFTitleColor}\MarkdownPDFTitleFont\Large\bfseries}
-  {\thesection}
-  {1em}
+  {\thesection\space-\space}
+  {0em}
   {}
   [{\vspace{-1.5em}\color{MarkdownPDFAccentColor}\rule{\linewidth}{0.1pt}}]
-\titlespacing*{\section}{0pt}{0em}{0em}
+\titlespacing*{\section}{0pt}{0.7em}{0.35em}
 
 \titleformat{\subsection}
-  {\color{MarkdownPDFTitleColor}\MarkdownPDFTitleFont\large\bfseries}
-  {\thesubsection}
-  {1em}
-  {}
-\titlespacing*{\subsection}{0pt}{1.2em}{0.6em}
+  {\MarkdownPDFTitleFont\large}
+  {\color{MarkdownPDFTitleColor}\thesubsection\space-\space}
+  {0em}
+  {\MarkdownPDFSubsectionTitle}
+\titlespacing*{\subsection}{0pt}{0.7em}{0.25em}
 
 \titleformat{\subsubsection}
   {\color{MarkdownPDFTitleColor}\MarkdownPDFTitleFont\normalsize\bfseries}
-  {\thesubsubsection}
-  {1em}
+  {\thesubsubsection\space-\space}
+  {0em}
   {}
-\titlespacing*{\subsubsection}{0pt}{1em}{0.5em}
+\titlespacing*{\subsubsection}{1.5em}{0.55em}{0.25em}
+
+\titleformat{\paragraph}
+  {\color{MarkdownPDFTitleColor}\MarkdownPDFTitleFont\normalsize\bfseries}
+  {\theparagraph\space-\space}
+  {0em}
+  {}
+\titlespacing*{\paragraph}{2em}{0.45em}{0.2em}
+
+\titleformat{\subparagraph}
+  {\color{MarkdownPDFTitleColor}\MarkdownPDFTitleFont\normalsize\bfseries}
+  {\thesubparagraph\space-\space}
+  {0em}
+  {}
+\titlespacing*{\subparagraph}{2.5em}{0.4em}{0.15em}
 
 {% raw %}
 \providecommand{\passthrough}[1]{#1}
@@ -181,9 +201,9 @@
 \def\fps@figure{htbp}
 \makeatother
 
-\setlist[itemize]{leftmargin=*, labelsep=0.5em}
-\setlist[enumerate]{leftmargin=*, labelsep=0.5em}
-\setlist[description]{leftmargin=*, labelsep=0.5em}
+\setlist[itemize]{leftmargin=*, labelsep=0.5em, itemsep=0.25em, parsep=0pt, topsep=0.18em}
+\setlist[enumerate]{leftmargin=*, labelsep=0.5em, itemsep=0.25em, parsep=0pt, topsep=0.18em}
+\setlist[description]{leftmargin=*, labelsep=0.5em, itemsep=0.3em, parsep=0pt, topsep=0.22em}
 
 \definecolor{MarkdownPDFTableAltRow}{HTML}{FAFBFD}
 \definecolor{MarkdownPDFTableRule}{HTML}{D6DFEB}
@@ -291,12 +311,12 @@
 {% endif %}
 
 \setlength{\headheight}{46pt}
-\setlength{\parskip}{0.8em}
+\setlength{\parskip}{0.45em}
 \setlength{\parindent}{0pt}
 
 \begin{document}
 
-\onehalfspacing
+\setstretch{1.2}
 
 {% set cover_enabled = show_cover | default(true) %}
 {% set toc_enabled = show_toc | default(true) %}
