@@ -50,7 +50,7 @@ Le dossier `examples/showcase/` propose des fichiers prêts à l'emploi couvrant
 - `--template` : fournir un template LaTeX Jinja personnalisé.
 - `--preamble` : injecter un fichier LaTeX supplémentaire dans le préambule.
 - `--meta` (fichier YAML/JSON) / `--meta-entry cle=valeur` : en-tête/pied personnalisables (logo, adresse, contact...). Les fichiers Markdown n'ont plus besoin de front matter et peuvent définir `title_color`, `title_font`, `body_font` ou encore `extra.subtitle` / `extra.cover_notes` pour la couverture.
-- `logo_path` (dans les métadonnées) permet d'afficher un logo sur la page de couverture ; utilisez un chemin relatif au document.
+- `logo_path` (dans les métadonnées) permet d'afficher un logo sur la page de couverture ; utilisez un chemin relatif au fichier de métadonnées (ou un chemin absolu).
 - `--disable-mermaid` ou options `--mermaid-*` pour maîtriser le rendu des diagrammes (par défaut rendu en PNG, compatible XeLaTeX).
 - `--disable-plantuml` ou options `--plantuml-*` pour activer/désactiver et configurer le rendu PlantUML (format, charset, arguments supplémentaires).
 - `--no-cover` / `--no-toc` pour supprimer respectivement la couverture ou la table des matières et générer un PDF simplifié.

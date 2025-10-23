@@ -159,8 +159,10 @@ def convert(
     output_dir = output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    metadata_path = metadata_file.resolve() if metadata_file else None
+
     metadata_data: Dict[str, object] = {}
-    file_metadata = _load_mapping_file(metadata_file)
+    file_metadata = _load_mapping_file(metadata_path)
     metadata_data.update(_normalize_metadata_dict(file_metadata))
     metadata_data.update(_parse_key_value(meta_entry))
 
@@ -224,6 +226,10 @@ def convert(
         structured_metadata["extra"] = extra_metadata
 
     metadata = DocumentMetadata(**structured_metadata)
+
+    if metadata.logo_path and metadata_path:
+        if not metadata.logo_path.is_absolute():
+            metadata.logo_path = (metadata_path.parent / metadata.logo_path).resolve()
 
     options = ConversionOptions(
         output_dir=output_dir,
