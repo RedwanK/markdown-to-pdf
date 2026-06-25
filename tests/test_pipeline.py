@@ -117,6 +117,46 @@ def test_pandoc_parses_lists_without_blankline(tmp_path: Path):
     assert latex.count("\\item") == 2
 
 
+def test_extract_toc_entries_from_legacy_hypertarget_output():
+    latex = (
+        "\\hypertarget{intro}{%\n"
+        "\\section{Introduction}\\label{intro}}\n\n"
+        "\\hypertarget{scope}{%\n"
+        "\\subsection{Scope}\\label{scope}}\n"
+    )
+
+    assert MarkdownPDFBuilder._extract_toc_entries(latex) == [
+        {"level": 1, "title": "Introduction", "target": "intro", "label": "intro"},
+        {"level": 2, "title": "Scope", "target": "scope", "label": "scope"},
+    ]
+
+
+def test_extract_toc_entries_from_current_numbered_pandoc_output():
+    latex = (
+        "\\section{Introduction}\\label{intro}\n\n"
+        "\\subsection{Scope}\\label{scope}\n"
+    )
+
+    assert MarkdownPDFBuilder._extract_toc_entries(latex) == [
+        {"level": 1, "title": "Introduction", "target": "intro", "label": "intro"},
+        {"level": 2, "title": "Scope", "target": "scope", "label": "scope"},
+    ]
+
+
+def test_extract_toc_entries_from_starred_pandoc_output_with_addcontentsline():
+    latex = (
+        "\\section*{Introduction}\\label{intro}\n"
+        "\\addcontentsline{toc}{section}{Introduction}\n\n"
+        "\\subsection*{Scope}\\label{scope}\n"
+        "\\addcontentsline{toc}{subsection}{Scope}\n"
+    )
+
+    assert MarkdownPDFBuilder._extract_toc_entries(latex) == [
+        {"level": 1, "title": "Introduction", "target": "intro", "label": "intro"},
+        {"level": 2, "title": "Scope", "target": "scope", "label": "scope"},
+    ]
+
+
 def test_pipeline_can_disable_cover_and_toc(monkeypatch, tmp_path: Path, markdown_file: Path):
     def fake_pandoc_convert(self, markdown_file, resource_paths=()):
         return "\\section{Bonjour}"

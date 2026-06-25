@@ -213,8 +213,15 @@ class MarkdownPDFBuilder:
     def _extract_toc_entries(latex_body: str) -> list[dict[str, object]]:
         """Récupère les sections pour alimenter une table des matières personnalisée."""
 
+        heading_commands = "section|subsection|subsubsection|paragraph|subparagraph"
         pattern = re.compile(
-            r"\\hypertarget\{(?P<target>[^}]+)\}\{%\s*\\(?P<command>section|subsection|subsubsection|paragraph|subparagraph)\{(?P<title>.*?)\}\\label\{(?P<label>[^}]+)\}\}",
+            rf"(?:\\hypertarget\{{(?P<target>[^}}]+)\}}\{{%\s*)?"
+            rf"\\(?P<command>{heading_commands})(?P<star>\*)?"
+            r"\{(?P<title>.*?)\}\\label\{(?P<label>[^}]+)\}"
+            rf"(?(target)\}})"
+            rf"(?P<addcontentsline>\s*\\addcontentsline\{{toc\}}"
+            rf"\{{(?P<toc_command>{heading_commands})\}}"
+            r"\{(?P<toc_title>.*?)\})?",
             flags=re.DOTALL,
         )
         level_map = {
@@ -226,7 +233,10 @@ class MarkdownPDFBuilder:
         }
         entries: list[dict[str, object]] = []
         for match in pattern.finditer(latex_body):
-            command = match.group("command")
+            if match.group("star") and not match.group("addcontentsline"):
+                continue
+
+            command = match.group("toc_command") or match.group("command")
             level = level_map.get(command)
             if level is None:
                 continue
@@ -235,7 +245,7 @@ class MarkdownPDFBuilder:
                 {
                     "level": level,
                     "title": title,
-                    "target": match.group("target"),
+                    "target": match.group("target") or match.group("label"),
                     "label": match.group("label"),
                 }
             )
